@@ -1,25 +1,81 @@
-import { useState,useEffect  } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
+
 function App() {
-  // 从本地读取数据（刷新不消失）
+  // =============== 登录/注册相关 ===============
+  const [page, setPage] = useState('login'); // login | register | todo
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [repassword, setRepassword] = useState('');
+  const [user, setUser] = useState(null);
+
+  // 刷新时自动登录
+  useEffect(() => {
+    const localUser = localStorage.getItem('user');
+    if (localUser) {
+      setUser(JSON.parse(localUser));
+      setPage('todo');
+    }
+  }, []);
+
+  // 注册
+  const handleRegister = () => {
+    if (!username || !password || !repassword) {
+      alert('请填写完整信息');
+      return;
+    }
+    if (password !== repassword) {
+      alert('两次密码不一致');
+      return;
+    }
+
+    const userData = { username, password };
+    localStorage.setItem('user', JSON.stringify(userData));
+    alert('注册成功！请登录');
+    setPage('login');
+  };
+
+  // 登录
+  const handleLogin = () => {
+    const localUser = localStorage.getItem('user');
+    if (!localUser) {
+      alert('用户不存在，请先注册');
+      return;
+    }
+
+    const userData = JSON.parse(localUser);
+    if (userData.username === username && userData.password === password) {
+      setUser(userData);
+      setPage('todo');
+    } else {
+      alert('账号或密码错误');
+    }
+  };
+
+  // 退出登录
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    setUser(null);
+    setPage('login');
+    setUsername('');
+    setPassword('');
+  };
+
+  // =============== TODO 相关 ===============
   const getLocalTodos = () => {
     const local = localStorage.getItem('todos');
     return local ? JSON.parse(local) : [];
   };
 
-  // 输入框内容
   const [inputText, setInputText] = useState('');
-  // 任务列表
   const [todoList, setTodoList] = useState(getLocalTodos);
-  // 编辑列表
   const [editId, setEditId] = useState(null);
   const [editText, setEditText] = useState('');
 
-  // 保存到本地
   useEffect(() => {
     localStorage.setItem('todos', JSON.stringify(todoList));
   }, [todoList]);
-  // 添加任务
+
   const addTodo = (e) => {
     e.preventDefault();
     if (!inputText.trim()) return;
@@ -30,7 +86,7 @@ function App() {
     ]);
     setInputText('');
   };
-  // 切换完成/未完成
+
   const toggleComplete = (id) => {
     setTodoList(
       todoList.map(todo =>
@@ -39,18 +95,15 @@ function App() {
     );
   };
 
-  // 删除任务
   const deleteTodo = (id) => {
     setTodoList(todoList.filter(todo => todo.id !== id));
   };
 
-  // 开始编辑
   const startEdit = (todo) => {
     setEditId(todo.id);
     setEditText(todo.text);
   };
 
-  // 保存编辑
   const saveEdit = (id) => {
     setTodoList(
       todoList.map(todo =>
@@ -60,17 +113,76 @@ function App() {
     setEditId(null);
   };
 
-  // 清空全部
   const clearAll = () => {
     setTodoList([]);
   };
 
-  return (
-        <div className="app">
-      <div className="container">
-        <h1>我的代办清单 ✅</h1>
+  // =============== 页面渲染 ===============
+  if (page === 'login') {
+    return (
+      <div className="auth-page">
+        <div className="auth-box">
+          <h2>登录</h2>
+          <input
+            placeholder="用户名"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+          <input
+            placeholder="密码"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <button className="auth-btn" onClick={handleLogin}>登录</button>
+          <p className="link" onClick={() => setPage('register')}>
+            没有账号？去注册
+          </p>
+        </div>
+      </div>
+    );
+  }
 
-        {/* 添加表单 */}
+  if (page === 'register') {
+    return (
+      <div className="auth-page">
+        <div className="auth-box">
+          <h2>注册</h2>
+          <input
+            placeholder="用户名"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+          <input
+            placeholder="密码"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <input
+            placeholder="确认密码"
+            type="password"
+            value={repassword}
+            onChange={(e) => setRepassword(e.target.value)}
+          />
+          <button className="auth-btn" onClick={handleRegister}>注册</button>
+          <p className="link" onClick={() => setPage('login')}>
+            已有账号？去登录
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // =============== 主页面 ===============
+  return (
+    <div className="app">
+      <div className="container">
+        <div className="top-row">
+          <h1>我的代办清单 ✅</h1>
+          <button className="logout-btn" onClick={handleLogout}>退出</button>
+        </div>
+
         <form onSubmit={addTodo} className="input-form">
           <input
             value={inputText}
@@ -80,14 +192,12 @@ function App() {
           <button type="submit">添加</button>
         </form>
 
-        {/* 任务列表 */}
         <div className="todo-list">
           {todoList.map((todo) => (
             <div
               key={todo.id}
               className={`todo-item ${todo.completed ? 'completed' : ''}`}
             >
-              {/* 编辑状态 */}
               {editId === todo.id ? (
                 <div className="edit-row">
                   <input
@@ -111,7 +221,6 @@ function App() {
           ))}
         </div>
 
-        {/* 清空按钮 */}
         {todoList.length > 0 && (
           <button className="clear-all" onClick={clearAll}>
             清空全部任务
