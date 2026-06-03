@@ -3,7 +3,9 @@ import './App.css';
 
 function App() {
   // =============== 登录/注册相关 ===============
+  // 定义一个变量 page 来控制当前显示哪个页面，初始值为 'login'，表示默认显示登录页面。
   const [page, setPage] = useState('login'); // login | register | todo
+  // 定义一个变量 username 来存储用户输入的用户名，初始值为 '豆芽'。用setUsername函数来更新这个变量的值。
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [repassword, setRepassword] = useState('');
@@ -54,7 +56,8 @@ function App() {
 
   // 退出登录
   const handleLogout = () => {
-    localStorage.removeItem('user');
+    // 这里不删除用户数据，保持注册状态。下次登录时直接使用即可。
+    // localStorage.removeItem('user');
     setUser(null);
     setPage('login');
     setUsername('');
