@@ -1,65 +1,123 @@
-import { useState } from 'react';
-
+import { useState,useEffect  } from 'react';
+import './App.css';
 function App() {
+  // 从本地读取数据（刷新不消失）
+  const getLocalTodos = () => {
+    const local = localStorage.getItem('todos');
+    return local ? JSON.parse(local) : [];
+  };
+
   // 输入框内容
   const [inputText, setInputText] = useState('');
   // 任务列表
-  const [todoList, setTodoList] = useState([]);
+  const [todoList, setTodoList] = useState(getLocalTodos);
+  // 编辑列表
+  const [editId, setEditId] = useState(null);
+  const [editText, setEditText] = useState('');
 
+  // 保存到本地
+  useEffect(() => {
+    localStorage.setItem('todos', JSON.stringify(todoList));
+  }, [todoList]);
   // 添加任务
-  function addTodo() {
-    if (inputText.trim() === '') return;
-    setTodoList([...todoList, inputText]);
-    setInputText('');
-  }
+  const addTodo = (e) => {
+    e.preventDefault();
+    if (!inputText.trim()) return;
 
-  // 删除单个任务
-  function deleteTodo(deleteIndex) {
-    const newList = todoList.filter((_, index) => index !== deleteIndex);
-    setTodoList(newList);
-  }
+    setTodoList([
+      ...todoList,
+      { id: Date.now(), text: inputText, completed: false }
+    ]);
+    setInputText('');
+  };
+  // 切换完成/未完成
+  const toggleComplete = (id) => {
+    setTodoList(
+      todoList.map(todo =>
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+      )
+    );
+  };
+
+  // 删除任务
+  const deleteTodo = (id) => {
+    setTodoList(todoList.filter(todo => todo.id !== id));
+  };
+
+  // 开始编辑
+  const startEdit = (todo) => {
+    setEditId(todo.id);
+    setEditText(todo.text);
+  };
+
+  // 保存编辑
+  const saveEdit = (id) => {
+    setTodoList(
+      todoList.map(todo =>
+        todo.id === id ? { ...todo, text: editText } : todo
+      )
+    );
+    setEditId(null);
+  };
+
+  // 清空全部
+  const clearAll = () => {
+    setTodoList([]);
+  };
 
   return (
-    <div style={{ padding: '20px', maxWidth: '400px', margin: '0 auto' }}>
-      <h1>我的代办清单</h1>
+        <div className="app">
+      <div className="container">
+        <h1>我的代办清单 ✅</h1>
 
-      {/* 输入框 + 添加按钮 */}
-      <div style={{ marginBottom: 10 }}>
-        <input
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          placeholder="请输入任务"
-          style={{ padding: 8, width: 250 }}
-        />
-        <button onClick={addTodo} style={{ marginLeft: 5, padding: '8px 12px' }}>
-          添加
-        </button>
-      </div>
+        {/* 添加表单 */}
+        <form onSubmit={addTodo} className="input-form">
+          <input
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            placeholder="输入新任务..."
+          />
+          <button type="submit">添加</button>
+        </form>
 
-      {/* 任务列表 */}
-      <ul style={{ paddingLeft: 20 }}>
-        {todoList.map((item, index) => (
-          <li key={index} style={{ margin: '5px 0' }}>
-            {index + 1}、{item}
-            <button
-              onClick={() => deleteTodo(index)}
-              style={{ marginLeft: 10, color: 'red' }}
+        {/* 任务列表 */}
+        <div className="todo-list">
+          {todoList.map((todo) => (
+            <div
+              key={todo.id}
+              className={`todo-item ${todo.completed ? 'completed' : ''}`}
             >
-              删除
-            </button>
-          </li>
-        ))}
-      </ul>
+              {/* 编辑状态 */}
+              {editId === todo.id ? (
+                <div className="edit-row">
+                  <input
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                  />
+                  <button onClick={() => saveEdit(todo.id)}>保存</button>
+                </div>
+              ) : (
+                <div className="todo-row">
+                  <div className="todo-text" onClick={() => toggleComplete(todo.id)}>
+                    {todo.text}
+                  </div>
+                  <div className="btn-group">
+                    <button onClick={() => startEdit(todo)}>编辑</button>
+                    <button className="delete" onClick={() => deleteTodo(todo.id)}>删除</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
 
-      {/* 清空所有 */}
-      {todoList.length > 0 && (
-        <button
-          onClick={() => setTodoList([])}
-          style={{ marginTop: 10, color: 'red' }}
-        >
-          清空所有任务
-        </button>
-      )}
+        {/* 清空按钮 */}
+        {todoList.length > 0 && (
+          <button className="clear-all" onClick={clearAll}>
+            清空全部任务
+          </button>
+        )}
+      </div>
     </div>
   );
 }
